@@ -1,9 +1,6 @@
 # PyOLEDMenu
 MicroPython Menu for Oled monitor with callbacks and customable menu pages. 
 
-Its schema is:
-![Menu drawio](https://github.com/user-attachments/assets/bb9aeb5e-b390-4a41-b83f-f5abcd85bd01)
-
 ## Installation
 
 Adding `pymenu.py` into your root dir, or just in a `/lib` folder. 
@@ -13,104 +10,116 @@ Adding `pymenu.py` into your root dir, or just in a `/lib` folder.
 The first thing to do is to initialize the display variable (can be any driver which supports `framebuf`, I use ssd1306).
 
 Then create menu object, specify how many items you want to display on one screen and size of one element.
-In my example I use 4 lines and 10px height each or 4 lines and 12px height.
-## Menu Navigation
-To walk through menu items you have to trigger methods from `Menu` class.
+In my example I use 4 lines and 10px height each.
 
-- `Menu.move(direction: -1|1)` with go to next or previous item.
-- `Menu.sh(direction: -1|1)` with go to next or previous item. 
-- `Menu.click()` select current item and execute callable, or go into SubMenu.
+## Menu Navigation
+To walk through menu pages or cells you have to trigger methods from `Menu` class.
+
+- `Menu.move(direction: -1|1)` with go to up or down.
+- `Menu.shift(direction: -1|1)` with go to right or left. 
+- `Menu.click()` select current item and execute callable, or go into other menu pages.
 - `Menu.reset()` reset current menu state and go to very beginning.
 - `Menu.draw()` redraw menu with current state.
 
-## Menu Items
-This package already contains some basic Menu Items objects which can be used to build your menu
+## Menu Classes
+This package contains some basic Menu objects which can be used to build your menu.
 
-### `SubMenuItem`
-Creates new sub-menu with list of items
+### MenuItems
+Low-level menu object, every objects inherit it. It contains principals variables like:
+  - name (str): the page or row or button name, sometime it defines the visible nmme on screen;
+  - parent: parent dependency, the default value is None;
+  - display: class with draw functions;
+  - visible: value or function that return a boolean to show the button or row, default value is None;
+             (read more in Visibility section)
+Futhermore, every class will implement its methods to work.
 
-**Arguments (common for all MenuItems):**
-- `name` - to define name visible on screen
-- `decorator` - decorator is a text or symbol aligned to right side of screen, can be also callable which return proper 
-string. Default: `>`
-- `visible` - determine if current section should be visible (read more in Visibility section)
-### `InfoItem`
-Dummy Item, shows only specified text, with no action.
+### `MenuView`
+MenuItem's child, it contains functions to implements the menu screen behaviour in a child class.
 
-**Arguments:**
+### `MenuCallback`
+MenuItem's child, it contains functions to implements the menu button behaviour in the child class.
+It is posible to execute a method when a button is clicked and it contains the decorator variable that is a text or symbol aligned to right side of screen, can be also callable which return a dinamic symbol. 
+Futhermore, there is also callback a callable method to trigger on click on item (more in section Callback).
 
-See SubMenuItem, default decorator here is empty.
+### `MenuRow`
+MenuCallback's child, it contains functions to draw a row in the menu list.
 
-### `CallbackItem`
-Item on menu which is able to trigger any callback specified in argument. After callback, parent screen is returned,
-but can be disabled by setting return_parent to False.
-
-**Specific Arguments:**
-
-- `callback` - callable to trigger on click on item (more in section Callback)
-- `return_parent` - to determine if parent should be returned or not
-
-### `EnumItem`
-Selected List, here you can define list which will be displayed after click, and on select that element will be 
-passed to callback
-
-**Specific Arguments:**
-- `items` - list of items, can be also list of dicts {'value': 'xxx', 'name': 'Fance name'}, where `name` will be 
-  displayed on screen and `value` passed to callback
-- `callback` - callable called after selecting specific position
-- `selected` - define which element should be selected (index or dict key)
-
-### `ValueItem`
-Widget to adjust values, by incrementing or decrementing by specified amount.
-
-**Specific Arguments:**
-- `value_reader` - callable to read current value as start to adjust
-- `min_v` - minimum value for range
-- `max_v` - maximum value for range
-- `step` - step to  increment / decrement
-- `callback` - callback called on every change of value, value will be passed as last argument
-
-### `CustomItem`
-Abstract class to override by custom logic, see example below. Also you can check `ValueItem` implementation
-which extends CustomItem.
+### `MenuList`
+MenuView's child, it is the list menu page. It contains the rendering of the page and the method to add menu pages to visit in the list.  
 
 ### `ToggleItem`
-Item to handle toggles, like on/off actions. You can specify state, and callback which will be called to change state.
-`ToggleItem` is an extension for `CallbackItem`
+MenuCallback's child, it is the row of a list menu with logic to handle toggles, like on/off actions to update the decorator.
+In the click method there is the logic to update the row decorator when it is selected related a method result state. It is possible to specify state, and callback which will be called to change state.
 
 **Specific Arguments:**
-
 - `state_callback` - callback to check current state
 - `change_callback` - callback to toggle current state (True/False)
 
+### `BackItem`
+MenuCallback's child, it is the row of a list menu with logic go back in the menu pages. 
+
+### 'ListItem'
+MenuRow's child, it is the wrapper row of a list menu that contains the menu page to go through.
+
+### 'EnumItem'
+MenuRow's child, it is the wrapper row of a list menu which contains a set of choices to select.
+In the click method there is the logic when this row is selected to update the decorator of the parent's wrapper row. 
+
 ### `ConfirmItem`
-Implementation of `CallbackItem` with prompt screen before calling custom function. Can be used when we need confirmation for specific action.
-If user select "no" option, callback won't be triggered.
+MenuRow's child, it is the wrapper row of a list menu which contains a two options to select.
+In the click method there is the logic when this row is selected to execute an action. 
+Can be used when there is a need to confirm a specific action. If user select "no" option, callback won't be triggered.
 
+### `ButtonItem`
+MenuRow's child, it is the button to execute an action with a parameter method.
+
+### 'MenuEnum'
+MenuList's child, it is a list menu page with an enumerate of choices to select. Its decorator updating is based on your selected item.  
+
+### 'MenuConfirm'
+MenuList's child, it is a list menu page with a couple of choices to select.  
 **Specific Arguments:**
-- `question` - can be None, then question "Are you sure?" will be visible
-- `answers` - tuple for `yes` and `no`, it'll simply override default tuple ('yes', 'no')
+- `items` - tuple for `yes` and `no`, it'll simply override default tuple ('yes', 'no')
 
+### 'MenuError'
+MenuView's child, it is the menu error page. It contains the rendering of the page.
+
+### 'Custom menu page'
+There are some custom menu pages like examples to create a own menu page. They are:
+- MenuMonitoringSensor
+- MenuHeaterManage
+- MenuWifiInfo
+- MenuSetTimer
+- MenuSetDateTime
+  
 ## Example menu
 ```python
-menu.set_screen(MenuScreen('Main Menu')
-    .add(SubMenuItem('WiFi')
-        .add(ToggleItem('Activate', wifi.get_status, wifi.activate)))
-    .add(SubMenuItem('Lights')
-        .add(ToggleItem('Headlight', (config.get_status, 1), (config.toggle, 1)))
-        .add(ToggleItem('Backlight', (config.get_status, 2), (config.toggle, 2)))
-    .add(SubMenuItem('Main Info')
-        .add(InfoItem('Status:', 'ok'))
-        .add(InfoItem('Temp:', '45.1')))
+menu.set_main_screen(MenuList(display, 'MENU')
+    .add(MenuEnum(display, 'MODE', ['AUTO', 'MAINTENANCE', 'STAND BY'], print))
+    .add(MenuList(display, 'RELAYS')
+        .add(ToggleItem(display, 'LIGHTS', (config.get_status, 0), (config.toggle, 0), ('ON', 'OFF')))
+        .add(ToggleItem(display, 'FILTER', (config.get_status, 1), (config.toggle, 1), ('ON', 'OFF')))
+        .add(ToggleItem(display, 'HEATER', (config.get_status, 2), (config.toggle, 2), ('ON', 'OFF')))
+        .add(ToggleItem(display, 'FEEDER', (config.get_status, 3), (config.toggle, 3), ('ON', 'OFF')))
+        .add(BackItem(display))    
+        )
+    .add(MenuList(display, 'SENSORS')
+        .add(MenuList(display, 'EC')
+            .add(ToggleItem(display, 'ACTIVATION', (config.get_status, 4), (config.toggle, 4)))
+            .add(MenuMonitoringSensor(display, 'MONITORING', visible=(config.get_status, 4)))
+            .add(ToggleItem(display, 'WEB SERVER', (config.get_status, 5), (config.toggle, 5), visible=(config.get_status, 4)))
+            .add(MenuEnum(display, "WEB RATE", ['1', '2', '3', '4', '6', '8', '12', '24'], print, visible=(config.get_status, 4)))  
+            .add(MenuConfirm(display, "SEND TO WEB", ('-> SEND', '<- BACK'), print, visible=(config.get_status, 4))) 
+            .add(BackItem(display))
+        )
+    )
 )
 menu.draw()
 ```
 
-![Generated Menu](images/main_menu.jpeg?raw=true "Menu")
-
 ## Callbacks
 
-In all MenuItems callbacks can be single callable if no parameters should be passed, or tuple where wirst element is 
+The callbacks can be single callable if no parameters should be passed, or tuple where wirst element is 
 callable, and second is a single arg or tuple with `*args`. For example:
 
 ```python
@@ -128,59 +137,9 @@ CallbackItem('Print it!', (print, (1, 2, 3)))
 Every item can be hidden separately by setting named argument `visible` to False or
 by passing callable to check conditions if element should be vissible. Callable should return True or False.
 
-## CustomItem
-
-To create your own menu logic, you can extend abstract class CustomItem class and implement at least `draw()` and 
-`select()` function.
-
-`draw()` is called once you click on specifiv CustomItem position, so basically it can do anything you want, what more
-that object has included display, so you can simply draw anything on OLED using driver's methods.
-
-Example usage of CustomItem, to draw some status page:
-
-```python
-class DrawCustomScreen(CustomItem):
-
-    def __init__(self, name):
-      super().__init__(name)
-  
-    def select(self):
-        return self.parent  # this is needed to go back to previous view when SET button is pushed
-
-    def draw(self):
-        self.display.fill(0)
-        self.display.rect(0, 0, self.display.width, self.display.height, 1)
-        self.display.text('SHOW SOME TEXT', 0, 10, 1)
-        self.display.hline(0, 32, self.display.width, 1)
-        self.display.show()
-
-menu.add_screen(MenuScreen('Main Menu')
-    .add(DrawCustomScreen('Text in frame'))
-)
-```
-
-See [`examples/rotary_encoder_menu.py`](./examples/rotary_encoder_menu.py). 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+## More
 
 It is possible to try it on: https://wokwi.com/projects/420822241066504193 
-
-
 
 The original repository is
 https://github.com/plugowski/umenu/tree/master
