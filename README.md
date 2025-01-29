@@ -31,6 +31,7 @@ Low-level menu object, every objects inherit it. It contains principals variable
   - display: class with draw functions;
   - visible: value or function that return a boolean to show the button or row, default value is None;
              (read more in Visibility section)
+    
 Futhermore, every class will implement its methods to work.
 
 ### `MenuView`
