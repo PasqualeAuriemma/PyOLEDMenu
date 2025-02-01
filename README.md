@@ -140,7 +140,8 @@ by passing callable to check conditions if element should be vissible. Callable 
 
 ## More
 
-It is possible to try it on: https://wokwi.com/projects/420822241066504193 
+It is possible to try it on:  
+https://wokwi.com/projects/418526558724341761
 
 The original repository is
 https://github.com/plugowski/umenu/tree/master
